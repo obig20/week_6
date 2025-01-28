@@ -22,24 +22,54 @@ def extract_features(data):
     return data
 
 # Function to encode categorical variables using OneHotEncoder
-def encode_categorical_variables(data):
+from sklearn.preprocessing import OneHotEncoder ,LabelEncoder
+import pandas as pd
+from scipy.sparse import csr_matrix
+
+def one_hot_encode(df, column):
     encoder = OneHotEncoder(sparse=False)
-    categorical_features = data.select_dtypes(include=['object']).columns
-    encoded_data = pd.DataFrame(encoder.fit_transform(data[categorical_features]))
-    encoded_data.columns = encoder.get_feature_names_out(categorical_features)
-    data = data.drop(categorical_features, axis=1)
-    data = data.join(encoded_data)
-    return data
+    encoded = encoder.fit_transform(df[[column]])
+    encoded_df = pd.DataFrame(encoded, columns=encoder.get_feature_names_out([column]))
+    return pd.concat([df, encoded_df], axis=1).drop(column, axis=1)
+
+def label_encode(df, column):
+    encoder = LabelEncoder()
+    df[column] = encoder.fit_transform(df[column])
+    return df
+
 
 # Function to handle missing values using SimpleImputer
-def handle_missing_values(data):
-    imputer = SimpleImputer(strategy='mean')
-    data = pd.DataFrame(imputer.fit_transform(data), columns=data.columns)
-    return data
 
+import pandas as pd
+from sklearn.impute import SimpleImputer
+
+import pandas as pd
+from sklearn.impute import SimpleImputer
+
+import pandas as pd
+from sklearn.impute import SimpleImputer
+
+def handle_missing_values(data, strategy='mean'):
+    # Separate numeric and non-numeric columns
+    numeric_cols = data.select_dtypes(include=['number']).columns
+    non_numeric_cols = data.select_dtypes(exclude=['number']).columns
+    
+    # Handle missing values for numeric columns
+    if strategy in ['mean', 'median', 'most_frequent']:
+        imputer = SimpleImputer(strategy=strategy)
+        data[numeric_cols] = imputer.fit_transform(data[numeric_cols])
+    else:
+        raise ValueError("Invalid strategy. Use 'mean', 'median', or 'most_frequent'.")
+    
+    # Handle missing values for non-numeric columns
+    imputer = SimpleImputer(strategy='most_frequent')
+    data[non_numeric_cols] = imputer.fit_transform(data[non_numeric_cols])
+    
+    return data
 # Function to normalize and standardize numerical features using StandardScaler
 def normalize_standardize_features(data):
     scaler = StandardScaler()
     numerical_features = data.select_dtypes(include=['int64', 'float64']).columns
     data[numerical_features] = scaler.fit_transform(data[numerical_features])
     return data
+
